@@ -7,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
 
     public CharacterController controller;
     public float base_speed = 12f;
+    public float slow_multiplier = 0.1f;
     public float sprint_multiplier = 2f;
     public float gravity = -9.8f;
 
@@ -41,7 +42,7 @@ public class PlayerMovement : MonoBehaviour
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
-        Vector3 move = transform.right * x + transform.forward * z;
+        Vector3 move = transform.right * x + transform.forward * z * slow_multiplier;
         controller.Move(move * playerSpeed * Time.deltaTime);
 
         if(Input.GetButtonDown("Jump") && isGrounded)

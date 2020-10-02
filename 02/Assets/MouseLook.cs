@@ -7,8 +7,8 @@ public class MouseLook : MonoBehaviour
 
     public float mouseSensitivity = 100f;
     public Transform playerBody;
-    public Transform bothArms;
-    public Transform rightArm;
+ //   public Transform bothArms;
+ //   public Transform rightArm;
     float xRotation = 0f;
 
     public float attackSpeed = 0.001f;
@@ -31,6 +31,8 @@ public class MouseLook : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+        // TODO: Add glance buffer --- able to look slightly left or right before rotation starts
         mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
@@ -39,7 +41,7 @@ public class MouseLook : MonoBehaviour
 
         transform.localRotation = Quaternion.Euler(xRotation, mouseY, 0f);
         playerBody.Rotate(Vector3.up * mouseX);
-        rightArm.Rotate(Vector3.up * mouseY * 2f);
+       // rightArm.Rotate(Vector3.up * mouseY * 2f);
     }
 
 }
