@@ -6,40 +6,57 @@ public class CoinController : MonoBehaviour
 {
     Rigidbody rb;
     public float mass;
+    public float density = 1f;
+    float meshVolume;
 
     // Start is called before the first frame update
     void Start()
     {
+        // Set rigidbody mass and mass parameter based on local scale
+        // todo more accurately calculate mass based on volume of mesh
+
+        meshVolume = Mathf.Pow(transform.localScale.x, 3f);
+
         rb = transform.GetComponent<Rigidbody>();
-        rb.mass = transform.localScale.magnitude;
+        rb.mass = density * meshVolume;
         mass = rb.mass;
     }
 
     // Update is called once per frame
     void Update()
     {
-        transform.localScale = transform.localScale * mass / rb.mass;
-        rb.mass = mass;
+        // Update mass and scale if currently being digested
+        // Keep density fixed, but mass may have changed. Update scale to match.
+        if (mass >= 0f) {
+            float newVolume = mass / density;
+            Vector3 newScale = Vector3.one * Mathf.Pow(newVolume, 1f / 3f);
+            transform.localScale = newScale;
+            rb.mass = mass;
+        }
 
-        if (transform.parent != null) 
-        {
-            Vector3 target = new Vector3(0f, 0.25f, 0f); //todo make into a parameter
+        // Move toward center if in a stomach
+        if (transform.parent != null) {
+            float targetY = transform.parent.localScale.magnitude / 2f;
+            Vector3 target = new Vector3(0f, targetY, 0f);
+
             Vector3 displacement = target - transform.localPosition;
-            if (displacement.magnitude > 0.3f) { //todo make into a parameter
-                transform.localPosition += displacement.normalized * Time.deltaTime;
+            float stomachRadius = transform.parent.localScale.magnitude / 3f;
+            if (displacement.magnitude > stomachRadius) {
+                transform.localPosition += displacement.normalized
+                                           * Time.deltaTime;
             }
         }
     }
+
     void OnTriggerEnter(Collider triggerCollider)
     {
-        if (triggerCollider.tag == "Player")
-        {
-            PlayerModel playerModel = triggerCollider.gameObject.GetComponent<PlayerModel>();
-            print(playerModel.mass);
-            print(mass);
-            if (playerModel.mass > mass) {
-                transform.parent = triggerCollider.gameObject.transform.parent;
-            }
+        if (triggerCollider.tag == "Player") {
+            GameObject pObject = triggerCollider.gameObject;
+            PlayerModel pModel = pObject.GetComponent<PlayerModel>();
+            PlayerController pCont = pObject.GetComponent<PlayerController>();
+            if (pModel.mass > mass) {
+                transform.parent = pObject.transform.parent;
+            } //todo: else push the block away
         }
     }
 }

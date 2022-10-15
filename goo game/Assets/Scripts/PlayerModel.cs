@@ -6,6 +6,7 @@ public class PlayerModel : MonoBehaviour
 {
     public float maxBobbingAmplitude = 0.25f;
     public float mass;
+    public float density = 0.5f;
 
     float bobbingPosition = 1f;
     float bobbingFrequency;
@@ -18,9 +19,10 @@ public class PlayerModel : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        mass = transform.localScale.magnitude/2f;
+        float meshVolume = 2f / 3f * Mathf.PI * Mathf.Pow(transform.localScale.x / 2f, 3f);
+        mass = density * meshVolume;
+
         originalScale = transform.localScale;
-        print(originalScale);
         playerObject = transform.parent.gameObject;
         playerController = playerObject.GetComponent<PlayerController>();
     }
@@ -29,10 +31,10 @@ public class PlayerModel : MonoBehaviour
     void Update()
     {
         transform.position = playerObject.transform.position;
-
-        float oldMass = originalScale.magnitude/2f;
-        originalScale *= mass / oldMass;
-        transform.localScale *= mass / oldMass;
+        float newVolume = mass / density;
+        Vector3 newScale = Vector3.one * 2f * Mathf.Pow(3f/2f * newVolume / Mathf.PI, 1f / 3f);
+        transform.localScale = newScale;
+        //todo: update originalScale in a way that doesn't break bobbing or digesting anim
     }
 
     void FixedUpdate()
