@@ -2,21 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BillboardSpriteSpawner : MonoBehaviour
+public class TerrainGrassSpawner : MonoBehaviour
 {
     public int instanceCount = 10000;
     public Mesh instanceMesh;
     public Material instanceMaterial;
-    public Bounds bounds;
+    public float instanceScale = 1.0f;
 
     private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
     private uint[] args = new uint[5];
     Vector4[] positions;
+    private Terrain terrain;
+    private Bounds bounds;
 
     // Start is called before the first frame update
     void Start()
     {
+        terrain = this.gameObject.GetComponent<Terrain>();
+        bounds = terrain.terrainData.bounds;
         SetArgsBuffer();
         SetLocBuffer();
     }
@@ -47,11 +51,11 @@ public class BillboardSpriteSpawner : MonoBehaviour
         for (int i = 0; i < instanceCount; i++)
         {
             // Generate position for the sprite
-            float x = Random.Range(0.0f, 50.0f);
-            float z = Random.Range(0.0f, 50.0f);
-            float y = 0.5f;
-            float size = 1.0f;
-            positions[i] = new Vector4(x, y, z, size);
+            float x = Random.Range(bounds.min.x, bounds.max.x);
+            float z = Random.Range(bounds.min.z, bounds.max.z);
+            float y = terrain.terrainData.GetInterpolatedHeight(x / (bounds.max.x - bounds.min.x), z / (bounds.max.z - bounds.min.z))+0.5f;
+            float size = instanceScale;
+            positions[i] = new Vector4(x - bounds.center.x, y-bounds.center.y, z - bounds.center.z, size);
         }
         // Fill buffers with the data
         positionBuffer.SetData(positions);
