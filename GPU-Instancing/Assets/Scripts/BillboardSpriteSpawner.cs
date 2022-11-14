@@ -49,8 +49,8 @@ public class BillboardSpriteSpawner : MonoBehaviour
             // Generate position for the sprite
             float x = Random.Range(0.0f, 50.0f);
             float z = Random.Range(0.0f, 50.0f);
-            float y = 0.5f;
             float size = 1.0f;
+            float y = 0.5f*size;
             positions[i] = new Vector4(x, y, z, size);
         }
         // Fill buffers with the data

@@ -6,10 +6,10 @@ Shader "Instanced/BillboardSpriteShader"
     }
     SubShader
     {
-        Tags 
-        { 
+        Tags
+        {
           //"DisableBatching"="True"
-          "Queue"="Transparent" 
+          "Queue"="Transparent"
         } // Render to the transparent queue
         Blend SrcAlpha OneMinusSrcAlpha // Enables transparent sprites
         Lighting Off
@@ -56,7 +56,7 @@ Shader "Instanced/BillboardSpriteShader"
                 float4 viewOrigin = float4(UnityObjectToViewPos(positionData.xyz), 1);
 
                 // Local position of object
-                float4 localPos = float4(v.vertex.xyz + positionData.xyz, 1.);
+                float4 localPos = float4(v.vertex.xyz*positionData.w + positionData.xyz, 1);
 
                 // Deconstruct the calls to render the vertex to clip space
                 float4 worldPos = mul(UNITY_MATRIX_M, localPos); // Model matrix

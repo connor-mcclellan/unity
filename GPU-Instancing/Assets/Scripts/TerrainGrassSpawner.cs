@@ -53,7 +53,7 @@ public class TerrainGrassSpawner : MonoBehaviour
             // Generate position for the sprite
             float x = Random.Range(bounds.min.x, bounds.max.x);
             float z = Random.Range(bounds.min.z, bounds.max.z);
-            float y = terrain.terrainData.GetInterpolatedHeight(x / (bounds.max.x - bounds.min.x), z / (bounds.max.z - bounds.min.z))+0.5f;
+            float y = terrain.terrainData.GetInterpolatedHeight(x / (bounds.max.x - bounds.min.x), z / (bounds.max.z - bounds.min.z))+instanceScale*0.5f;
             float size = instanceScale;
             positions[i] = new Vector4(x - bounds.center.x, y-bounds.center.y, z - bounds.center.z, size);
         }
