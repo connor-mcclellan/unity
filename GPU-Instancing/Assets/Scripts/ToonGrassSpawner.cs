@@ -8,6 +8,7 @@ public class ToonGrassSpawner : MonoBehaviour
     public Mesh instanceMesh;
     public Material instanceMaterial;
     public float instanceScale = 1.0f;
+    public float scaleVariance = 0.5f;
 
     private ComputeBuffer positionBuffer;
     private ComputeBuffer normBuffer;
@@ -52,7 +53,8 @@ public class ToonGrassSpawner : MonoBehaviour
         normBuffer = new ComputeBuffer(instanceCount, 3 * sizeof(float));
         norms = new Vector3[instanceCount];
 
-        for (int i = 0; i < instanceCount; i++)
+//        for (int i = 0; i < instanceCount; i++)
+        for (int i = instanceCount-1; i >= 0; i--)
         {
             // Generate position for the sprite
             float x = Random.Range(bounds.min.x, bounds.max.x);
@@ -63,7 +65,7 @@ public class ToonGrassSpawner : MonoBehaviour
 
             float y = terrain.terrainData.GetInterpolatedHeight(normx, normz)+instanceScale*0.5f;
 
-            float size = instanceScale;
+            float size = instanceScale + Random.Range(-scaleVariance, scaleVariance);
 
             positions[i] = new Vector4(x - bounds.center.x, y-bounds.center.y, z - bounds.center.z, size);
             norms[i] = terrain.terrainData.GetInterpolatedNormal(normx, normz);

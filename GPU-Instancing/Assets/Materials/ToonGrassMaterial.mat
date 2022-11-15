@@ -68,15 +68,15 @@ Material:
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _ShadowBands: 5
-    - _ShadowDarkness: 0.48
-    - _ShadowOffset: 2.2
+    - _ShadowDarkness: 0.65
+    - _ShadowOffset: 2
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.7909904, g: 1, b: 0.4575472, a: 1}
+    - _Color: {r: 0.7586991, g: 0.9716981, b: 0.41709682, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ShadowTint: {r: 0.011263847, g: 0, b: 1, a: 1}
+    - _ShadowTint: {r: 0.07168007, g: 0, b: 1, a: 1}
   m_BuildTextureStacks: []

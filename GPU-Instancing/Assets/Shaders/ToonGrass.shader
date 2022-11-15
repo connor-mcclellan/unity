@@ -14,11 +14,11 @@ Shader "Instanced/ToonGrass"
         Tags
         {
           "Queue"="Transparent"
-          "RenderType"="Opaque"
+          "IgnoreProjector"="True"
+          "RenderType"="TransparentCutout"
         }
-        Blend SrcAlpha OneMinusSrcAlpha // Enables transparent sprites
-        //Lighting Off
-        ZWrite Off // Allows transparent sprites to render on top of each other
+        Blend SrcAlpha OneMinusSrcAlpha // Enables sprite transparency
+        ZWrite On
         Pass
         {
             CGPROGRAM
@@ -98,6 +98,7 @@ Shader "Instanced/ToonGrass"
                 float4 col = tex2D(_MainTex, i.uv);
                 float4 rgb = _Color * (clampedIntensity + shadowTint);
                 col = float4(rgb.xyz, col.w);
+                clip(col.a - 0.5);
                 return col;
             }
             ENDCG

@@ -1,7 +1,7 @@
 Shader "mccbc/Toon" {
   Properties {
     _Color ("Color", Color) = (0.5, 0.65, 1, 1)
-    _MainTex ("Main Texture", 2 D) = "white" {}
+    _MainTex ("Main Texture", 2D) = "white" {}
     _ShadowBands ("Shadow bands", Int) = 3
     _ShadowFalloff ("Shadow falloff", Range (0, 10)) = 0
     _ShadowOffset ("Shadow offset", Range (0, 3)) = 1
@@ -33,9 +33,9 @@ Shader "mccbc/Toon" {
       };
 
 	    struct v2f {
-        float3 worldNormal: NORMAL; 
-        float3 viewDir: TEXCOORD1; 
-        float4 pos: SV_POSITION; 
+        float3 worldNormal: NORMAL;
+        float3 viewDir: TEXCOORD1;
+        float4 pos: SV_POSITION;
         float2 uv:TEXCOORD0;
 	      SHADOW_COORDS (2)
       };
@@ -49,14 +49,14 @@ Shader "mccbc/Toon" {
 	      o.viewDir = WorldSpaceViewDir (v.vertex);
 	      o.pos = UnityObjectToClipPos (v.vertex);
 	      o.uv = TRANSFORM_TEX (v.uv, _MainTex);
-	      TRANSFER_SHADOW (o) 
+	      TRANSFER_SHADOW (o)
         return o;
       }
 
       int _ShadowBands;
-      float _ShadowFalloff, _ShadowOffset, _ShadowDarkness, _RimWidth; 
+      float _ShadowFalloff, _ShadowOffset, _ShadowDarkness, _RimWidth;
             _RimThreshold;
-      float4 _Color, _ShadowTint, _RimColor; 
+      float4 _Color, _ShadowTint, _RimColor;
 
       float4 frag (v2f i):SV_Target {
 	      float3 normal = normalize (i.worldNormal);
@@ -67,7 +67,7 @@ Shader "mccbc/Toon" {
 	      float NdotLNorm = 0.5 * (NdotL + 1);
 
 	      // Calculate light intensity based on shadow falloff
-	      float lightIntensity = 1 - exp (-NdotLNorm * _ShadowFalloff + 
+	      float lightIntensity = 1 - exp (-NdotLNorm * _ShadowFalloff +
                                _ShadowOffset) * (1 - NdotLNorm);
 
 	      // Compute shadow attenuation
@@ -75,12 +75,12 @@ Shader "mccbc/Toon" {
 	      lightIntensity *= shadow;
 
 	      // Clamp intensity to discrete bands
-	      float bandedIntensity = ceil (lightIntensity * _ShadowBands) 
+	      float bandedIntensity = ceil (lightIntensity * _ShadowBands)
                                 / _ShadowBands;
 
 	      // Rescale intensity according to how dark shadows should be
 	      bandedIntensity = lerp (1 - _ShadowDarkness, 1, bandedIntensity);
-	      float clampedIntensity = clamp (bandedIntensity, 
+	      float clampedIntensity = clamp (bandedIntensity,
                                         1 - _ShadowDarkness, 1);
 	      float4 sample = tex2D (_MainTex, i.uv);
 
