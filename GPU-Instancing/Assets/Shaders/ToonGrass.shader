@@ -13,11 +13,13 @@ Shader "Instanced/ToonGrass"
     {
         Tags
         {
-          "Queue"="Transparent"
+          "Queue"="AlphaTest"
           "IgnoreProjector"="True"
           "RenderType"="TransparentCutout"
+          "LightMode"="ForwardBase"
+          "PassFlags"="OnlyDirectional"
         }
-        Blend SrcAlpha OneMinusSrcAlpha // Enables sprite transparency
+        //Blend SrcAlpha OneMinusSrcAlpha
         ZWrite On
         Pass
         {
@@ -25,6 +27,7 @@ Shader "Instanced/ToonGrass"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instanced
+            #pragma multi_compile_fwdbase
             #include "UnityCG.cginc"
             #include "AutoLight.cginc"
 
@@ -41,10 +44,9 @@ Shader "Instanced/ToonGrass"
             struct v2f
             {
                 float3 worldNormal: NORMAL;
+                float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float3 viewDir: TEXCOORD1;
-                float4 vertex : SV_POSITION;
-                SHADOW_COORDS(2)
+                float4 _ShadowCoord : TEXCOORD1;
             };
 
             // Simple billboard vertex shader
@@ -73,9 +75,8 @@ Shader "Instanced/ToonGrass"
 
                 o.uv = v.uv.xy;
                 o.worldNormal = UnityObjectToWorldNormal(normData);
-                o.vertex = clipPos;
-                o.viewDir = WorldSpaceViewDir(v.vertex);
-                TRANSFER_SHADOW(o)
+                o.pos = clipPos;
+                o._ShadowCoord = ComputeScreenPos(o.pos);
                 return o;
             }
 
@@ -86,9 +87,13 @@ Shader "Instanced/ToonGrass"
             {
                 float NdotL = dot(_WorldSpaceLightPos0, i.worldNormal);
                 float NdotLNorm = 0.5 * (NdotL + 1);
-                float3 viewDir = normalize(i.viewDir);
 
                 float lightIntensity = 1 - exp(-NdotLNorm + _ShadowOffset) * (1 - NdotLNorm);
+
+                // Compute shadow attenuation
+                float shadow = SHADOW_ATTENUATION (i);
+	            lightIntensity *= shadow;
+
                 float bandedIntensity = ceil(lightIntensity * _ShadowBands) / _ShadowBands;
                 bandedIntensity = lerp(1 - _ShadowDarkness, 1, bandedIntensity);
                 float clampedIntensity = clamp(bandedIntensity, 1 - _ShadowDarkness, 1);
@@ -103,6 +108,5 @@ Shader "Instanced/ToonGrass"
             }
             ENDCG
         }
-        UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
     }
 }
