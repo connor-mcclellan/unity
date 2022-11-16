@@ -72,7 +72,7 @@ Shader "Instanced/ToonGrass"
 
                 o.uv = v.uv.xy;
                 o.worldNormal = UnityObjectToWorldNormal(normData);
-                o.worldPos = worldPos.xyz;
+                o.worldPos = worldOrigin.xyz; // use worldPos.xyz here for partial sprite shading (angle is incorrect though)
                 o.pos = clipPos;
                 return o;
             }

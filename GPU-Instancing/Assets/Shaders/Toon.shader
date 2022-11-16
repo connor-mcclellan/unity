@@ -8,12 +8,12 @@ Shader "mccbc/Toon" {
     _ShadowTint ("Shadow tint", Color) = (0.0, 0.35, .65, 1)
   }
   SubShader {
+    Tags {
+      "RenderType" = "Opaque"
+      "LightMode" = "ForwardBase"
+      "PassFlags" = "OnlyDirectional"
+    }
     Pass {
-	    Tags {
-		    "LightMode" = "ForwardBase"
-		    "PassFlags" = "OnlyDirectional"
-      }
-
       CGPROGRAM
       #pragma vertex vert
       #pragma fragment frag
