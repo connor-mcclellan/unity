@@ -15,9 +15,7 @@ Shader "Instanced/ToonGrass"
         {
           "Queue"="AlphaTest"
           "IgnoreProjector"="True"
-          "RenderType"="TransparentCutout"
-          "LightMode"="ForwardBase"
-          "PassFlags"="OnlyDirectional"
+          "RenderType"="Grass"
         }
         //Blend SrcAlpha OneMinusSrcAlpha
         ZWrite On
@@ -27,9 +25,8 @@ Shader "Instanced/ToonGrass"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instanced
-            #pragma multi_compile_fwdbase
             #include "UnityCG.cginc"
-            #include "AutoLight.cginc"
+            #include "Shadows.cginc"
 
             sampler2D _MainTex;
             StructuredBuffer<float4> positionBuffer;
@@ -46,7 +43,7 @@ Shader "Instanced/ToonGrass"
                 float3 worldNormal: NORMAL;
                 float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float4 _ShadowCoord : TEXCOORD1;
+                float3 worldPos: TEXCOORD1;
             };
 
             // Simple billboard vertex shader
@@ -75,8 +72,8 @@ Shader "Instanced/ToonGrass"
 
                 o.uv = v.uv.xy;
                 o.worldNormal = UnityObjectToWorldNormal(normData);
+                o.worldPos = worldPos.xyz;
                 o.pos = clipPos;
-                o._ShadowCoord = ComputeScreenPos(o.pos);
                 return o;
             }
 
@@ -91,8 +88,8 @@ Shader "Instanced/ToonGrass"
                 float lightIntensity = 1 - exp(-NdotLNorm + _ShadowOffset) * (1 - NdotLNorm);
 
                 // Compute shadow attenuation
-                float shadow = SHADOW_ATTENUATION (i);
-	            lightIntensity *= shadow;
+                half shadow = GetSunShadowsAttenuation(i.worldPos, 1.0);
+                lightIntensity *= shadow;
 
                 float bandedIntensity = ceil(lightIntensity * _ShadowBands) / _ShadowBands;
                 bandedIntensity = lerp(1 - _ShadowDarkness, 1, bandedIntensity);
