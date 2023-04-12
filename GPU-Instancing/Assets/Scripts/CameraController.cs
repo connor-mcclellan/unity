@@ -34,29 +34,14 @@ public class CameraController : MonoBehaviour
         // Detect input from player
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            targetViewpointIndex = (currentViewpointIndex + 3) % 4; // Cycle to previous viewpoint
-            targetRotation = Quaternion.Euler(viewpoints[targetViewpointIndex]); // Set target rotation to previous viewpoint
-            startTime = Time.time;
+            currentViewpointIndex = (currentViewpointIndex + 3) % 4; // Cycle to previous viewpoint
+            targetRotation = Quaternion.Euler(viewpoints[currentViewpointIndex]); // Set target rotation to previous viewpoint
         }
         else if (Input.GetKeyDown(KeyCode.E))
         {
-            targetViewpointIndex = (currentViewpointIndex + 1) % 4; // Cycle to next viewpoint
-            targetRotation = Quaternion.Euler(viewpoints[targetViewpointIndex]); // Set target rotation to next viewpoint
-            startTime = Time.time;
-
+            currentViewpointIndex = (currentViewpointIndex + 1) % 4; // Cycle to next viewpoint
+            targetRotation = Quaternion.Euler(viewpoints[currentViewpointIndex]); // Set target rotation to next viewpoint
         }
-        // Smoothly rotate camera towards target rotation around pivot point
-        float elapsedTime = Time.time - startTime;
-     
-        float t = Mathf.Sin((elapsedTime - startTime) / smoothness * Mathf.PI * 0.5f);
-        if (t < 1.0f)
-        {
-            transform.RotateAround(pivotPoint.position, Vector3.up, t * (targetRotation.eulerAngles.y - transform.rotation.eulerAngles.y) * Time.deltaTime);
-        }
-        else {
-            currentViewpointIndex = targetViewpointIndex;
-        }
-
-
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, smoothness * Time.deltaTime);
     }
 }
