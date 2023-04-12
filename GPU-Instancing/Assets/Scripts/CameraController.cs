@@ -5,13 +5,16 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     public float rotationSpeed = 10f; // Speed of rotation
-    public float smoothness = 2f; // Smoothness of motion between viewpoints
+    public float smoothness = 2f; // Time to rotate between viewpoints
     public float maxRotation = 90f; // Maximum rotation angle between viewpoints
     public Transform pivotPoint; // Pivot point for camera rotation
 
     private Quaternion targetRotation; // Target rotation for smoothing
     private Vector3[] viewpoints; // Array of viewpoints
     private int currentViewpointIndex = 0; // Index of current viewpoint
+    private int targetViewpointIndex = 0; // Index of current viewpoint
+    private float startTime = 0f;
+
 
     void Start()
     {
@@ -31,16 +34,29 @@ public class CameraController : MonoBehaviour
         // Detect input from player
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            currentViewpointIndex = (currentViewpointIndex + 3) % 4; // Cycle to previous viewpoint
-            targetRotation = Quaternion.Euler(viewpoints[currentViewpointIndex]); // Set target rotation to previous viewpoint
+            targetViewpointIndex = (currentViewpointIndex + 3) % 4; // Cycle to previous viewpoint
+            targetRotation = Quaternion.Euler(viewpoints[targetViewpointIndex]); // Set target rotation to previous viewpoint
+            startTime = Time.time;
         }
         else if (Input.GetKeyDown(KeyCode.E))
         {
-            currentViewpointIndex = (currentViewpointIndex + 1) % 4; // Cycle to next viewpoint
-            targetRotation = Quaternion.Euler(viewpoints[currentViewpointIndex]); // Set target rotation to next viewpoint
+            targetViewpointIndex = (currentViewpointIndex + 1) % 4; // Cycle to next viewpoint
+            targetRotation = Quaternion.Euler(viewpoints[targetViewpointIndex]); // Set target rotation to next viewpoint
+            startTime = Time.time;
+
+        }
+        // Smoothly rotate camera towards target rotation around pivot point
+        float elapsedTime = Time.time - startTime;
+     
+        float t = Mathf.Sin((elapsedTime - startTime) / smoothness * Mathf.PI * 0.5f);
+        if (t < 1.0f)
+        {
+            transform.RotateAround(pivotPoint.position, Vector3.up, t * (targetRotation.eulerAngles.y - transform.rotation.eulerAngles.y) * Time.deltaTime);
+        }
+        else {
+            currentViewpointIndex = targetViewpointIndex;
         }
 
-        // Smoothly rotate camera towards target rotation around pivot point
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, smoothness * Time.deltaTime);
+
     }
 }
