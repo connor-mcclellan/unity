@@ -2,17 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using UnityEngine;
+using System.Collections;
+
 public class CameraController : MonoBehaviour
 {
     public Transform pivotPoint; // Pivot point for camera rotation
-
     private float targetRotation; // Target rotation for smoothing
     private float startTime = 0f;
     private Vector3 offset;
 
     void Start()
     {
-        // Set initial target rotation to current rotation
+        GetComponent<Camera>().depthTextureMode = DepthTextureMode.DepthNormals;
         targetRotation = transform.rotation.eulerAngles.y;
         offset = transform.position - pivotPoint.transform.position;
     }
