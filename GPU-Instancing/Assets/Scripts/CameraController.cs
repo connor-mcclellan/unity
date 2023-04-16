@@ -2,13 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using UnityEngine;
-using System.Collections;
-
 public class CameraController : MonoBehaviour
 {
     public Transform pivotPoint; // Pivot point for camera rotation
-
     private float targetRotation = 0f; // Target rotation for smoothing
     private float startTime = -2f;
     private Vector3 offset;
