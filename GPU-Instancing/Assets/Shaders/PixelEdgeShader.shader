@@ -2,6 +2,7 @@ Shader "Custom/PixelEdgeShader" {
     Properties {
         _MainTex ("", 2D) = "white" {}
         _RenderTex ("Render Texture", 2D) = "white" {}
+        _HighlightStrength ("Highlight Strength", Range(0, 1)) = 0
     }
 
     SubShader {
@@ -18,6 +19,8 @@ Shader "Custom/PixelEdgeShader" {
             sampler2D _CameraDepthNormalsTexture;
             sampler2D _RenderTex;
             float4 _RenderTex_TexelSize;
+            sampler2D _MainTex;
+            float _HighlightStrength;
 
             struct appdata {
                 float4 vertex: POSITION;
@@ -36,20 +39,37 @@ Shader "Custom/PixelEdgeShader" {
                 return o;
             }
 
-            sampler2D _MainTex;
+
+            float3 neighborNormalEdgeIndicator(sampler2D CamTexture, float2 uv, float2 dudv, float depth, float3 normal) {
+                float neighborDepth;
+                float3 neighborNormal;
+                DecodeDepthNormal(tex2D(CamTexture, uv + dudv/_ScreenParams.xy), neighborDepth, neighborNormal);
+
+                float ldepth = Linear01Depth(depth);
+                float lneighborDepth = Linear01Depth(neighborDepth);
+                float depthDiff = lneighborDepth - ldepth;
+                float depthIndicator = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
+
+                float3 normalEdgeBias = float3(1., 1., 1.);
+                float normalDiff = dot(normal - neighborNormal, normalEdgeBias);
+                float normalIndicator = clamp(smoothstep(-.01, .01, normalDiff), 0.0, 1.0);
+
+                return (1.0 - dot(normal, neighborNormal)) * depthIndicator * normalIndicator;
+            }
 
             half4 frag (v2f i) : SV_Target{
-                float3 normalValues;
-                float depthValue;
-                float2 pixelScale = _RenderTex_TexelSize.zw / _ScreenParams.xy;
-                float2 pixelUV = floor(i.uv * pixelScale + 0.5) / pixelScale;
-                DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture, pixelUV), depthValue, normalValues);
-                // TODO: Perform normal sampling for pixelUV +- 1 from this coordinate in all 4 directions
-                // If difference is greater than threshold, apply the highlight to the base color
-                // Make sure only upward-facing normals in world coordinates are highlighted
-                // (with locked isometric camera, can just use green-valued normals as potential highlight locations?)
-                float4 normalColor = float4(normalValues, 1);
-                return normalColor;
+                float depth;
+                float3 norm;
+                DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture, i.uv), depth, norm); // Center
+                float edgeIndicator = 0.;
+                edgeIndicator += neighborNormalEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(0,1), depth, norm);
+                edgeIndicator += neighborNormalEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(0,-1), depth, norm);
+                edgeIndicator += neighborNormalEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(-1,0), depth, norm);
+                edgeIndicator += neighborNormalEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(1,0), depth, norm);
+				float indicator = step(0.1, edgeIndicator);
+                float highlight = _HighlightStrength * indicator;
+                float4 Color = float4(norm * (1 + highlight), 1);
+                return Color;
             }
             ENDCG
         }

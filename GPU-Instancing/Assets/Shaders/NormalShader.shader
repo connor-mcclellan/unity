@@ -15,6 +15,7 @@ Shader "Custom/PixelShader" {
             // NOTE: *Must* set GetComponent<Camera>().depthTextureMode = DepthTextureMode.DepthNormals
             // in CameraController script - tells Camera to render depth and normals textures
             sampler2D _CameraDepthNormalsTexture;
+            sampler2D _MainTex;
 
             struct appdata {
                 float4 vertex: POSITION;
@@ -33,8 +34,6 @@ Shader "Custom/PixelShader" {
                 o.uv=ComputeScreenPos(o.vertex);
                 return o;
             }
-
-            sampler2D _MainTex;
 
             half4 frag (v2f i) : SV_Target{
                 float3 normalValues;
