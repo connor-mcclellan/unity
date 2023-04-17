@@ -83,7 +83,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _HighlightStrength: 1
+    - _HighlightStrength: 0.5
     - _HighlightsEnabled: 1
     - _Metallic: 0
     - _Mode: 0
@@ -93,7 +93,7 @@ Material:
     - _ShadowBands: 3
     - _ShadowDarkness: 0.543
     - _ShadowOffset: 1.8
-    - _ShadowStrength: 0.4
+    - _ShadowStrength: 0.5
     - _ShadowsEnabled: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
