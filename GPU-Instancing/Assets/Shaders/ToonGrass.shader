@@ -100,7 +100,7 @@ Shader "Instanced/ToonGrass"
                 float4 col = tex2D(_MainTex, i.uv);
                 float4 rgb = _Color * (clampedIntensity + shadowTint);
                 col = float4(rgb.xyz, col.w);
-                clip(col.a - 0.5);
+                clip(col.a - 0.25);
                 return col;
             }
             ENDCG
