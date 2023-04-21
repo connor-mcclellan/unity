@@ -1,13 +1,32 @@
 Shader "mccbc/PixelEdgeToonShader" {
     Properties {
-        _MainTex ("", 2D) = "white" {}
-        _Color ("Color", Color) = (0.5, 0.5, 0.5, 1)
+
+        // Albedo from image texture
+        _MainTex ("Diffuse", 2D) = "white" {}
+
+        // Toon shader parameters
         _ShadowBands ("Shadow Bands", Int) = 3
         _ShadowOffset ("Shadow offset", Range (0, 3)) = 1
         _ShadowDarkness ("Shadow darkness", Range (0, 1)) = 1
         _ShadowTint ("Shadow tint", Color) = (0.0, 0.35, .65, 1)
-        _EdgeHighlightStrength ("Highlight Strength", Range(0, 1)) = 0.5
-        _EdgeShadowStrength ("Shadow Strength", Range(0, 1)) = 0.5
+
+        // TODO: Separate edge highlight for ambient lighting and individual light sources
+        // Tune ambient to give subtle edge highlights to bring out geometry / pixel art style
+        // Highlights from direct lights match light source color - warm glow from candle, green from potion, etc.
+        
+        // Pixel art edge highlight parameters
+        _EdgeHighlightStrength ("Edge Highlight Strength", Range(0, 1)) = 0.5
+        _EdgeShadowStrength ("Edge Shadow Strength", Range(0, 1)) = 0.5
+
+        // DEBUG PARAMETERS
+        _NormalAngleThreshold ("Normal Angle Threshold", float) = 0.5
+        _DepthThreshold ("Depth Threshold", float) = 0.006
+
+        // DEBUG VISUALIZER SELECTION
+        _Rendered ("Render Mode", Int) = 1
+        _DebugNormals ("Debug Normals", Int) = 0
+        _DebugHighlights ("Debug Edge Highlights", Int) = 0
+        _DebugShadows ("Debug Edge Shadows", Int) = 0
     }
 
     SubShader {
@@ -28,7 +47,6 @@ Shader "mccbc/PixelEdgeToonShader" {
             // *Must* set GetComponent<Camera>().depthTextureMode = DepthTextureMode.DepthNormals
             // in CameraController script - tells Camera to render depth and normals textures
             sampler2D _CameraDepthNormalsTexture;
-            float4 _Color;
             sampler2D _MainTex;
             float4 _MainTex_ST;
             float _EdgeHighlightStrength;
@@ -36,6 +54,9 @@ Shader "mccbc/PixelEdgeToonShader" {
             int _ShadowBands;
             float _ShadowFalloff, _ShadowOffset, _ShadowDarkness;
             float4 _ShadowTint;
+            float _NormalAngleThreshold;
+            float _DepthThreshold;
+            int _Rendered, _DebugNormals, _DebugHighlights, _DebugShadows;
 
             struct appdata {
                 float3 normal: NORMAL;
@@ -46,7 +67,8 @@ Shader "mccbc/PixelEdgeToonShader" {
             struct v2f {
                 float3 worldNormal : NORMAL;
                 float4 pos : SV_POSITION;
-                float4 uv: TEXCOORD0;
+                float4 objuv : TEXCOORD0;
+                float4 screenuv: TEXCOORD1;
                 SHADOW_COORDS(2)
             };
 
@@ -54,8 +76,9 @@ Shader "mccbc/PixelEdgeToonShader" {
                 v2f o;
                 o.worldNormal = UnityObjectToWorldNormal (v.normal);
                 o.pos = UnityObjectToClipPos(v.vertex);
-                o.uv=ComputeScreenPos(o.pos);
-                TRANSFER_SHADOW(o)
+                o.objuv = v.uv; // Object space UVs for albedo texture mapping
+                o.screenuv = ComputeScreenPos(o.pos); // Screen-space UVs for pixel shader / edge highlights
+                TRANSFER_SHADOW(o) // Macro to receive shadows from Autolight
                 return o;
             }
 
@@ -64,19 +87,26 @@ Shader "mccbc/PixelEdgeToonShader" {
                 float3 neighborNormal;
                 DecodeDepthNormal(tex2D(CamTexture, uv + dudv/_ScreenParams.xy), neighborDepth, neighborNormal);
 
+                // TODO: Scale depth difference as a fraction of orthographic camera clipping planes?
+                // Get mindepth and maxdepth from camera properties
                 float ldepth = Linear01Depth(depth);
                 float lneighborDepth = Linear01Depth(neighborDepth);
-                float depthDiff = lneighborDepth - ldepth;
-                float depthIndicator = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
+                float depthDiff = lneighborDepth - ldepth; // Positive if neighbor deeper than this pixel
 
-                float3 normalEdgeBias = float3(1., 1., 1.);
-                float normalDiff = dot(normal - neighborNormal, normalEdgeBias);
-                float normalIndicator = clamp(smoothstep(-.01, .01, normalDiff), 0.0, 1.0);
+                // Shallower pixel should detect the edge
+                // If this pixel is shallower, depthDiff > 0 -> depthIndicator is 1
+                // If neighbor pixel is shallower, depthDiff < 0 -> depthIndicator is 0
+                float normalDepthIndicator = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
+
+                // Separate threshold for whether or not to draw a shadow on this pixel
+                float depthIndicator = clamp(sign(depthDiff - _DepthThreshold), 0.0, 1.0);
+
+                // Detect edge if angle between adjacent pixels' normals is larger than threshold
+                float normalDot = dot(normal-neighborNormal, float3(1, 1, 1)) / 1.73205; // sqrt 3 so dot is between 0 and 1
+                float normalIndicator = clamp(smoothstep(-.01, .01, normalDot - _NormalAngleThreshold), 0.0, 1.0);
 
                 // Pack depth and normal edge check values into a float2
-                float depthValue = clamp(depthDiff, 0., 1.);
-                float normValue = (1.0 - dot(normal, neighborNormal)) * depthIndicator * normalIndicator;
-                return float2(depthValue, normValue);
+                return float2(depthIndicator, (1 - normalDot) * normalIndicator*normalDepthIndicator);
             }
 
             half4 frag (v2f i) : SV_Target{
@@ -100,30 +130,32 @@ Shader "mccbc/PixelEdgeToonShader" {
                 // Rescale to bottom out according to toon shadow darkness parameter
                 lightIntensity = lerp(1-_ShadowDarkness, 1, lightIntensity);
                 lightIntensity = clamp(lightIntensity, 1-_ShadowDarkness, 1);
-                float4 mainTexSample = tex2D(_MainTex, i.uv);
+                float4 mainTexSample = tex2D(_MainTex, i.objuv);
                 float4 shadowTint = (1 - lightIntensity) * _ShadowTint;
-
 
                 // PIXEL EDGE HIGHLIGHTS AND DEPTH SHADOW
                 // ======================================
                 float depth;
                 float3 norm;
-                DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture, i.uv), depth, norm);
+                DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture, i.screenuv), depth, norm);
 
                 float2 edgeIndicator = float2(0., 0.);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(0,1), depth, norm);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(0,-1), depth, norm);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(-1,0), depth, norm);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.uv, float2(1,0), depth, norm);
+                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(0,1), depth, norm);
+                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(0,-1), depth, norm);
+                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(-1,0), depth, norm);
+                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(1,0), depth, norm);
 
-                float depthIndicator = floor(smoothstep(0.01, 0.02, edgeIndicator.x) * 2.) / 2.;
-            	float normalIndicator = step(0.1, edgeIndicator.y);
+                float depthIndicator = clamp(edgeIndicator.x, 0.0, 1.0);
+            	float normalIndicator = clamp(edgeIndicator.y, 0.0, 1.0);
 
                 float highlight = _EdgeHighlightStrength * normalIndicator;
                 float shadow = _EdgeShadowStrength * depthIndicator;
 
-
-                return float4(_Color.rgb * (lightIntensity + shadowTint.rgb) * (1 + highlight) * (1 - shadow), 1);
+                float4 renderFrag = float4(mainTexSample.rgb * (lightIntensity + shadowTint.rgb) * (1 + highlight) * (1 - shadow), 1);
+                float4 normalDebugFrag = float4(0.5 * norm + 0.5, 1);
+                float4 highlightDebugFrag = float4(normalIndicator, normalIndicator, normalIndicator, 1);
+                float4 shadowDebugFrag = float4(depthIndicator, depthIndicator, depthIndicator, 1);
+                return renderFrag * _Rendered + normalDebugFrag * _DebugNormals + highlightDebugFrag * _DebugHighlights + shadowDebugFrag * _DebugShadows;
             }
             ENDCG
         }
