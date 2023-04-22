@@ -17,9 +17,14 @@ Shader "mccbc/PixelEdgeToonShader" {
         // Pixel art edge highlight parameters
         _EdgeHighlightStrength ("Edge Highlight Strength", Range(0, 1)) = 0.5
         _EdgeShadowStrength ("Edge Shadow Strength", Range(0, 1)) = 0.5
+        _UpWeight ("Up weight", Range(0, 1)) = 1.0
+        _DownWeight ("Down weight", Range(0, 1)) = 0.0
+        _LeftWeight ("Left weight", Range(0, 1)) = 0.5
+        _RightWeight ("Right weight", Range(0, 1)) = 0.5
 
         // DEBUG PARAMETERS
-        _NormalAngleThreshold ("Normal Angle Threshold", float) = 0.5
+        _NormalAngleThreshold ("Normal Angle Threshold", Range(0, 1)) = 0.5
+        _NormalDepthThreshold ("Normal Depth Threshold", float) = 0.0005
         _DepthThreshold ("Depth Threshold", float) = 0.006
 
         // DEBUG VISUALIZER SELECTION
@@ -54,8 +59,9 @@ Shader "mccbc/PixelEdgeToonShader" {
             int _ShadowBands;
             float _ShadowFalloff, _ShadowOffset, _ShadowDarkness;
             float4 _ShadowTint;
-            float _NormalAngleThreshold;
+            float _NormalAngleThreshold, _NormalDepthThreshold;
             float _DepthThreshold;
+            float _UpWeight, _DownWeight, _LeftWeight, _RightWeight; 
             int _Rendered, _DebugNormals, _DebugHighlights, _DebugShadows;
 
             struct appdata {
@@ -82,7 +88,8 @@ Shader "mccbc/PixelEdgeToonShader" {
                 return o;
             }
 
-            float2 neighborEdgeIndicator(sampler2D CamTexture, float2 uv, float2 dudv, float depth, float3 normal) {
+            float2 neighborEdgeIndicator(sampler2D CamTexture, float2 uv, float2 dudv, float depth, float3 normal, float weight) {
+
                 float neighborDepth;
                 float3 neighborNormal;
                 DecodeDepthNormal(tex2D(CamTexture, uv + dudv/_ScreenParams.xy), neighborDepth, neighborNormal);
@@ -96,18 +103,48 @@ Shader "mccbc/PixelEdgeToonShader" {
                 // Shallower pixel should detect the edge
                 // If this pixel is shallower, depthDiff > 0 -> depthIndicator is 1
                 // If neighbor pixel is shallower, depthDiff < 0 -> depthIndicator is 0
-                float normalDepthIndicator = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
+                float normalDepthIndicator = clamp(sign(depthDiff - _NormalDepthThreshold), 0.0, 1.0);
 
                 // Separate threshold for whether or not to draw a shadow on this pixel
                 float depthIndicator = clamp(sign(depthDiff - _DepthThreshold), 0.0, 1.0);
 
-                // Detect edge if angle between adjacent pixels' normals is larger than threshold
-                float normalDot = dot(normal-neighborNormal, float3(1, 1, 1)) / 1.73205; // sqrt 3 so dot is between 0 and 1
-                float normalIndicator = clamp(smoothstep(-.01, .01, normalDot - _NormalAngleThreshold), 0.0, 1.0);
+                // Detect edge if cosine of angle between adjacent pixels' normals is larger than threshold
+                float normalDot = dot(normal, neighborNormal) / 1.73205; // divide by sqrt 3 so dot is between -1 and 1
+                float normalAngle = 1 - normalDot;
+                float normalIndicator = clamp(sign(normalAngle - _NormalAngleThreshold), 0.0, 1.0);
 
                 // Pack depth and normal edge check values into a float2
-                return float2(depthIndicator, (1 - normalDot) * normalIndicator*normalDepthIndicator);
+                return float2(depthIndicator, weight * normalIndicator * normalDepthIndicator * (1-depthIndicator));
             }
+
+            float2 neighborOld(sampler2D CamTexture, float2 uv, float2 dudv, float depth, float3 normal, float weight) {
+ 
+                float neighborDepth;
+                float3 neighborNormal;
+                DecodeDepthNormal(tex2D(CamTexture, uv + dudv/_ScreenParams.xy), neighborDepth, neighborNormal);
+
+                // TODO: Scale depth difference as a fraction of orthographic camera clipping planes?
+                // Get mindepth and maxdepth from camera properties
+                float ldepth = Linear01Depth(depth);
+                float lneighborDepth = Linear01Depth(neighborDepth);
+                float depthDiff = lneighborDepth - ldepth; // Positive if neighbor deeper than this pixel
+
+                // Shallower pixel should detect the edge
+                // If this pixel is shallower, depthDiff > 0 -> depthIndicator is 1
+                // If neighbor pixel is shallower, depthDiff < 0 -> depthIndicator is 0
+                float normalDepthIndicator = clamp(sign(depthDiff * .25 + 0.0025), 0.0, 1.0);
+
+                // Separate threshold for whether or not to draw a shadow on this pixel
+                float depthIndicator = depthDiff;
+
+                // Detect edge if cosine of angle between adjacent pixels' normals is larger than threshold
+                float normalDot = dot(normal - neighborNormal, float3(1, 1, 1)); // divide by sqrt 3 so dot is between -1 and 1
+                float normalIndicator = clamp(smoothstep(-0.01, 0.01, normalDot), 0.0, 1.0);
+
+                // Pack depth and normal edge check values into a float2
+                return float2(depthIndicator, weight * (1 - dot(normal, neighborNormal)) * normalDepthIndicator * normalIndicator);
+                
+            } 
 
             half4 frag (v2f i) : SV_Target{
 
@@ -140,12 +177,13 @@ Shader "mccbc/PixelEdgeToonShader" {
                 DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture, i.screenuv), depth, norm);
 
                 float2 edgeIndicator = float2(0., 0.);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(0,1), depth, norm);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(0,-1), depth, norm);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(-1,0), depth, norm);
-                edgeIndicator += neighborEdgeIndicator(_CameraDepthNormalsTexture, i.screenuv, float2(1,0), depth, norm);
+                edgeIndicator += neighborOld(_CameraDepthNormalsTexture, i.screenuv, float2(0,1), depth, norm, _UpWeight); //up
+                edgeIndicator += neighborOld(_CameraDepthNormalsTexture, i.screenuv, float2(0,-1), depth, norm, _DownWeight); //down
+                edgeIndicator += neighborOld(_CameraDepthNormalsTexture, i.screenuv, float2(-1,0), depth, norm, _LeftWeight); //left
+                edgeIndicator += neighborOld(_CameraDepthNormalsTexture, i.screenuv, float2(1,0), depth, norm, _RightWeight); //right
 
-                float depthIndicator = clamp(edgeIndicator.x, 0.0, 1.0);
+                //float depthIndicator = clamp(edgeIndicator.x, 0.0, 1.0);
+                float depthIndicator = floor(smoothstep(0.01, 0.02, edgeIndicator.x) * 2.0) / 2.0; // From three.js code
             	float normalIndicator = clamp(edgeIndicator.y, 0.0, 1.0);
 
                 float highlight = _EdgeHighlightStrength * normalIndicator;
