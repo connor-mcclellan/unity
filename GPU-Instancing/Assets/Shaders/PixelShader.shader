@@ -23,7 +23,7 @@ Shader "mccbc/PixelEdgeToonShader" {
         _RightWeight ("Right weight", Range(0, 1)) = 0.5
 
         // DEBUG PARAMETERS
-        _NormalAngleThreshold ("Normal Angle Threshold", Range(0, 1)) = 0.5
+        //_NormalAngleThreshold ("Normal Angle Threshold", Range(0, 1)) = 0.5
         _NormalDepthThreshold ("Normal Depth Threshold", float) = 0.0005
         _DepthThreshold ("Depth Threshold", float) = 0.006
 
@@ -132,7 +132,7 @@ Shader "mccbc/PixelEdgeToonShader" {
                 // Shallower pixel should detect the edge
                 // If this pixel is shallower, depthDiff > 0 -> depthIndicator is 1
                 // If neighbor pixel is shallower, depthDiff < 0 -> depthIndicator is 0
-                float normalDepthIndicator = clamp(sign(depthDiff * .25 + 0.0025), 0.0, 1.0);
+                float normalDepthIndicator = clamp(sign(depthDiff + 0.01), 0.0, 1.0);
 
                 // Separate threshold for whether or not to draw a shadow on this pixel
                 float depthIndicator = depthDiff;
