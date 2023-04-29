@@ -40,7 +40,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 6946db7cac4fbc471bb638e5ff837260, type: 3}
+        m_Texture: {fileID: 2800000, guid: bacf2f9701dfaa54a89051ef0f6d4d2a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -61,36 +61,36 @@ Material:
     - _DebugHighlights: 0
     - _DebugNormals: 0
     - _DebugShadows: 0
-    - _DepthThreshold: 0
+    - _DepthThreshold: -0.08
     - _DetailNormalMapScale: 1
     - _DownWeight: 1
     - _DstBlend: 0
-    - _EdgeHighlightStrength: 0.5
-    - _EdgeShadowStrength: 0.25
+    - _EdgeHighlightStrength: 0.425
+    - _EdgeShadowStrength: 0.411
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1
-    - _LeftWeight: 0.5
+    - _LeftWeight: 0.25
     - _Metallic: 0
     - _Mode: 0
-    - _NormalAngleThreshold: 0.563
-    - _NormalDepthThreshold: 0
+    - _NormalAngleThreshold: 0.515
+    - _NormalDepthThreshold: -3.13
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _Rendered: 1
-    - _RightWeight: 0.5
-    - _ShadowBands: 1.14
-    - _ShadowDarkness: 0.38
-    - _ShadowOffset: 2.06
+    - _RightWeight: 0.25
+    - _ShadowBands: 4
+    - _ShadowDarkness: 0.672
+    - _ShadowOffset: 0.56
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _UpWeight: 0.25
+    - _UpWeight: 0
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _NormalEdgeBias: {r: 1, g: 1, b: 1, a: 0}
-    - _ShadowTint: {r: 0, g: 0.35, b: 0.65, a: 1}
+    - _ShadowTint: {r: 0.034300447, g: 0.059781905, b: 0.38679248, a: 1}
   m_BuildTextureStacks: []

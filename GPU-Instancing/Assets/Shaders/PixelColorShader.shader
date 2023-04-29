@@ -1,8 +1,7 @@
-Shader "mccbc/PixelEdgeToonShader" {
+Shader "mccbc/PixelEdgeColorShader" {
     Properties {
 
-        // Albedo from image texture
-        _MainTex ("Diffuse", 2D) = "white" {}
+        // Albedos
         _Color ("Color", Color) = (1.0, 1.0, 1.0, 1.0)
 
         // Toon shader parameters
@@ -133,10 +132,10 @@ Shader "mccbc/PixelEdgeToonShader" {
                 // Shallower pixel should detect the edge
                 // If this pixel is shallower, depthDiff > 0 -> depthIndicator is 1
                 // If neighbor pixel is shallower, depthDiff < 0 -> depthIndicator is 0
-                float normalDepthIndicator = clamp(sign(depthDiff - _NormalDepthThreshold), 0.0, 1.0);
+                float normalDepthIndicator = clamp(sign(depthDiff * .25 + 0.0025), 0.0, 1.0);
 
                 // Separate threshold for whether or not to draw a shadow on this pixel
-                float depthIndicator = depthDiff + _DepthThreshold;
+                float depthIndicator = depthDiff;
 
                 // Detect edge if cosine of angle between adjacent pixels' normals is larger than threshold
                 float normalDot = dot(normal - neighborNormal, float3(1, 1, 1)); // divide by sqrt 3 so dot is between -1 and 1
@@ -190,7 +189,7 @@ Shader "mccbc/PixelEdgeToonShader" {
                 float highlight = _EdgeHighlightStrength * normalIndicator;
                 float shadow = _EdgeShadowStrength * depthIndicator;
 
-                float4 renderFrag = float4(mainTexSample.rgb * (lightIntensity + shadowTint.rgb) * (1 + highlight) * (1 - shadow), 1);
+                float4 renderFrag = float4(_Color.rgb * (lightIntensity + shadowTint.rgb) * (1 + highlight) * (1 - shadow), 1);
                 float4 normalDebugFrag = float4(0.5 * norm + 0.5, 1);
                 float4 highlightDebugFrag = float4(normalIndicator, normalIndicator, normalIndicator, 1);
                 float4 shadowDebugFrag = float4(depthIndicator, depthIndicator, depthIndicator, 1);

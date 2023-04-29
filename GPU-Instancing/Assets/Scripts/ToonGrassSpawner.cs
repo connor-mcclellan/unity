@@ -67,8 +67,7 @@ public class ToonGrassSpawner : MonoBehaviour
 
             float y = terrain.terrainData.GetInterpolatedHeight(normx, normz)+size*0.5f;
 
-
-            positions[i] = new Vector4(x - bounds.center.x, y-bounds.center.y, z - bounds.center.z, size);
+            positions[i] = new Vector4(x - bounds.center.x + terrain.transform.position.x, y-bounds.center.y, z - bounds.center.z + terrain.transform.position.z, size);
             norms[i] = terrain.terrainData.GetInterpolatedNormal(normx, normz);
         }
         // Fill buffers with the data

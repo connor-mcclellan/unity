@@ -1,7 +1,7 @@
 Shader "Custom/PixelEdgeShader" {
     Properties {
         _MainTex ("", 2D) = "white" {}
-        _RenderTex ("Render Texture", 2D) = "white" {}
+        _Color ("Color", Color) = (0.5, 0.5, 0.5, 1.0)
         _HighlightStrength ("Highlight Strength", Range(0, 1)) = 0.5
         _ShadowStrength ("Shadow Strength", Range(0, 1)) = 0.5
     }
@@ -23,6 +23,7 @@ Shader "Custom/PixelEdgeShader" {
             sampler2D _MainTex;
             float _HighlightStrength;
             float _ShadowStrength;
+            float4 _Color;
 
             struct appdata {
                 float4 vertex: POSITION;
@@ -80,7 +81,7 @@ Shader "Custom/PixelEdgeShader" {
                 float highlight = _HighlightStrength * normalIndicator;
                 float shadow = _ShadowStrength * depthIndicator;
 
-                return float4(norm * (1 + highlight) * (1 - shadow), 1);
+                return float4(_Color.rgb * (1 + highlight) * (1 - shadow), 1);
             }
             ENDCG
         }
